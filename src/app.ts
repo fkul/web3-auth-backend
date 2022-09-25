@@ -1,9 +1,11 @@
 import { createServer } from "./utils/server";
 
+const port = process.env.PORT || 3000;
+
 createServer()
   .then((server) => {
-    server.listen(3000, () => {
-      console.info(`Listening on http://localhost:3000`);
+    server.listen(port, () => {
+      console.info(`Listening on port ${port}`);
     });
   })
   .catch((err) => {
