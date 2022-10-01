@@ -18,8 +18,8 @@ app.use(function (req, res, next) {
 });
 app.use(express.json());
 
-const users: User[] = [];
-const messages: Message[] = [];
+let users: User[] = [];
+let messages: Message[] = [];
 
 app.post("/join", (req, res) => {
   const user: User = {
@@ -29,16 +29,24 @@ app.post("/join", (req, res) => {
   };
 
   users.push(user);
-  res.json(user);
-
   io.emit("users", users);
-  res.status(200).send();
+  messages.push({ date: new Date(), from: user, value: `/me joined` });
+  io.emit("messages", messages);
+  res.json(user);
+});
+
+app.post("/leave", (req, res) => {
+  messages.push({ date: new Date(), from: req.body.user, value: `/me left` });
+  io.emit("messages", messages);
+  users = users.filter((user) => user.socketId !== req.body.user.socketId);
+  io.emit("users", users);
+  res.send();
 });
 
 app.post("/message", (req, res) => {
   messages.push(req.body);
   io.emit("messages", messages);
-  res.status(200).send();
+  res.send();
 });
 
 io.on("connection", (socket) => {
