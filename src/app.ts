@@ -1,11 +1,12 @@
 import express from "express";
 import session from "express-session";
 import http from "http";
+import dotenv from "dotenv";
 import { generateNonce, SiweMessage } from "siwe";
 
 import { Server } from "socket.io";
 import { Message, restrictedUserLevels, User } from "./types";
-import { mapToArray } from "./utils";
+import { getLevel, mapToArray } from "./utils";
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +30,8 @@ app.use(
 );
 app.use(express.json());
 
+dotenv.config();
+
 declare module "express-session" {
   interface SessionData {
     nonce?: string;
@@ -36,20 +39,16 @@ declare module "express-session" {
   }
 }
 
-let users: Map<string, User> = new Map();
-let messages: Message[] = [];
+const users: Map<string, User> = new Map();
+const messages: Message[] = [];
 
-app.post("/api/chat/join", (req, res) => {
+app.post("/api/chat/join", async (req, res) => {
   const { socketId, address } = req.body;
   const existingUser = users.get(socketId);
   const user: User = {
     socketId,
     displayName: address ?? `Anon-${socketId}`,
-    level: address
-      ? address === req.session.siwe?.address
-        ? "authenticated"
-        : "connected"
-      : "anonymous",
+    level: address ? await getLevel(address, req.session) : "anonymous",
   };
 
   if (!existingUser) {
@@ -86,6 +85,16 @@ app.post("/api/chat/message", (req, res) => {
     return res.status(401).end();
   }
   messages.push(message);
+  io.emit("messages", messages);
+  res.end();
+});
+
+app.post("/api/chat/clear", async (req, res) => {
+  const address = req.session.siwe?.address;
+  if (!address || (await getLevel(address, req.session)) !== "moderator") {
+    return res.status(403).end();
+  }
+  messages.length = 0;
   io.emit("messages", messages);
   res.end();
 });
