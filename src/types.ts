@@ -1,4 +1,6 @@
-type UserLevel = "anonymous" | "connected" | "authenticated" | "vip";
+type UserLevel = "anonymous" | "connected" | "authenticated" | "moderator";
+
+export const restrictedUserLevels: UserLevel[] = ["authenticated", "moderator"];
 
 export interface User {
   socketId: string;
