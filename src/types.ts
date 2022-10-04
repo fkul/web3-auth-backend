@@ -1,3 +1,12 @@
+import { SiweMessage } from "siwe";
+
+declare module "express-session" {
+  interface SessionData {
+    nonce?: string;
+    siwe?: SiweMessage;
+  }
+}
+
 export type UserLevel =
   | "anonymous"
   | "connected"
@@ -11,6 +20,8 @@ export interface User {
   level: UserLevel;
   displayName: string;
 }
+
+export type Users = Map<string, User>;
 
 export interface Message {
   date: Date;
